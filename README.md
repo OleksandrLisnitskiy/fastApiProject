@@ -6,6 +6,5 @@ API to gather information about classmates.
 <li>Update information about existing classmates</li>
 <li>Filtering by name, major and range of age</li>
 </ul>
-
-<h1>Creator</h1>
+# Creator
 <h3>Oleksadr Lisnytskyi</h3>
