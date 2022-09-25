@@ -5,7 +5,10 @@ Accept: application/json
 
 ###
 
-GET http://127.0.0.1:8000/hello/User
+GET http://127.0.0.1:8000/get_by_name?name=Sasha
 Accept: application/json
 
 ###
+
+GET http://127.0.0.1:8000/get_by_age?age=18
+Accept: application/jsonpp
