@@ -2,7 +2,9 @@ from typing import Optional
 from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel
 import sqlite3
-from config import *
+from imports.config import *
+from imports.funcs import convertor
+from fastapi.encoders import jsonable_encoder
 
 app = FastAPI()
 
@@ -46,12 +48,12 @@ async def root():
 
     :return: return information about all existing classmates
     """
-    return cur.execute(select_all).fetchall()
+    return convertor(cur.execute(select_all).fetchall())
 
 
 @app.get('/get_by_name', status_code=200)
 async def get_by_name(name: str = Query(default=...,
-                                        description='Name of classmate to search')) -> list[list]:
+                                        description='Name of classmate to search')) -> list:
     """
     called after sending the request 127.0.0.1:8000/get_by_name
 
@@ -60,14 +62,14 @@ async def get_by_name(name: str = Query(default=...,
     """
     res = cur.execute(select_by_name, (name,)).fetchall()
     if res:
-        return res
+        return convertor(res)
     raise HTTPException(status_code=404, detail="No classmates with such name")
 
 
 @app.get("/get_by_age", status_code=200)
 async def get_by_age(age: int = Query(default=...,
                                       description='age of classmates you want to search')
-                     ) -> list[list] or HTTPException:
+                     ) -> list:
     """
     called after sending the request 127.0.0.1:8000/get_by_age
 
@@ -76,12 +78,12 @@ async def get_by_age(age: int = Query(default=...,
     """
     res = cur.execute(select_by_age, (age,)).fetchall()
     if res:
-        return res
+        return convertor(res)
     raise HTTPException(status_code=404, detail="No classmates with such age")
 
 
 @app.post("/add_classmate", status_code=201)
-async def add_classmate(classmate: Classmate) -> Classmate or HTTPException:
+async def add_classmate(classmate: Classmate) -> str:
     """
     Add classmate to database
     Send JSON with data (name and age are required fields)
@@ -98,20 +100,20 @@ async def add_classmate(classmate: Classmate) -> Classmate or HTTPException:
         con.commit()
     except:
         raise HTTPException(status_code=501, detail="Database issues")
-    return classmate
+    return jsonable_encoder(classmate)
 
 
 @app.put("/update", status_code=201)
 async def update_classmate(classmate: Classmate_Update,
                            classmate_id: int = Query(default=..., description="ID of classmate you want to change")) \
-        -> list or HTTPException:
+        -> list[dict]:
     """
     Function to update existing classmate info
     Send JSON with data that should be updated (no required fields)
 
     :param classmate: class Classmate_Update with data to update classmate info (only values that requires changes)
     :param classmate_id: ID of classmate to change, Query parameter in URL like http//x:8000?classmate_id=...
-    :return: updated classmate info
+    :return: updated classmate info, return list of dict [{"id": ,"name": , "last_name": ,"age": , "major": }]
     """
     classmates = cur.execute(select_all).fetchall()
     for mate in classmates:
@@ -122,5 +124,5 @@ async def update_classmate(classmate: Classmate_Update,
             major = classmate.major if classmate.major is not None else mate[4]
             cur.execute(change_existing_user, (name, last_name, age, major, classmate_id))
             con.commit()
-            return mate
+            return convertor([mate])
     raise HTTPException(status_code=404, detail="No such classmate in list")
