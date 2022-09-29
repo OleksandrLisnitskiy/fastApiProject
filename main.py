@@ -126,3 +126,23 @@ async def update_classmate(classmate: Classmate_Update,
             con.commit()
             return convertor([mate])
     raise HTTPException(status_code=404, detail="No such classmate in list")
+
+
+@app.delete("/delete_classmate", status_code=200)
+async def delete_classmate(classmate_id: int = Query(default=..., description="Classmate ID to delete")) -> list[dict]:
+    """
+    Function to delete classmate from database by his ID
+
+    :param classmate_id: int: classmate ID to be deleted
+    :return: all data about deleted user list of dict [{"id": ,"name": , "last_name": ,"age": , "major": }]
+    """
+    try:
+        deleted_classmate = cur.execute(deleted_user_data, (classmate_id,)).fetchall()
+
+        print(deleted_classmate)
+        cur.execute(delete_user, (classmate_id,))
+        con.commit()
+    except Exception as _ex:
+        print(_ex)
+        raise HTTPException(status_code=404, detail=f"No user with ID {classmate_id}")
+    return convertor(deleted_classmate)

@@ -20,3 +20,7 @@ change_existing_user = """UPDATE classmates SET
                           major = ?
                           WHERE classmate_id = ?
                           """
+
+delete_user = """DELETE FROM classmates WHERE classmate_id = ?"""
+
+deleted_user_data = """SELECT * FROM classmates WHERE classmate_id = ?"""
