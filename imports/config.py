@@ -5,11 +5,11 @@ create_table = """CREATE TABLE IF NOT EXISTS classmates(
                     age INTEGER , 
                     major CHAR(40))"""
 
-select_all = """SELECT * FROM classmates """
+select_all = """SELECT * FROM classmates ORDER BY classmate_name"""
 
-select_by_name = """SELECT * FROM classmates WHERE classmate_name = ?"""
+select_by_name = """SELECT * FROM classmates WHERE classmate_name = ? ORDER BY classmate_name"""
 
-select_by_age = """SELECT * FROM classmates WHERE age = ?"""
+select_by_age = """SELECT * FROM classmates WHERE age = ? ORDER BY classmate_name"""
 
 add_new_classmate = """INSERT INTO classmates(classmate_name, last_name, age, major) VALUES (?, ?, ?, ?)"""
 

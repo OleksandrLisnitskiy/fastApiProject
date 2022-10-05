@@ -1,12 +1,13 @@
-from typing import Optional
+from typing import Optional, List
 from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel
 import sqlite3
 from imports.config import *
-from imports.funcs import convertor
+from imports.funcs import *
 from fastapi.encoders import jsonable_encoder
 
 app = FastAPI()
+
 
 # CONNECT SQLITE3 DATABASE
 try:
@@ -14,9 +15,9 @@ try:
     cur = con.cursor()
     res = cur.execute(create_table)
     res.fetchone()
-except Exception as _ex:
+except Exception as _Ex:
     print("Please try again! Something wrong with database.")
-    print(_ex)
+    print(_Ex)
 
 
 class Classmate(BaseModel):
@@ -48,7 +49,7 @@ async def root():
 
     :return: return information about all existing classmates
     """
-    return convertor(cur.execute(select_all).fetchall())
+    return convertor_db_to_list(cur.execute(select_all).fetchall())
 
 
 @app.get('/get_by_name', status_code=200)
@@ -62,7 +63,7 @@ async def get_by_name(name: str = Query(default=...,
     """
     res = cur.execute(select_by_name, (name,)).fetchall()
     if res:
-        return convertor(res)
+        return convertor_db_to_list(res)
     raise HTTPException(status_code=404, detail="No classmates with such name")
 
 
@@ -78,12 +79,12 @@ async def get_by_age(age: int = Query(default=...,
     """
     res = cur.execute(select_by_age, (age,)).fetchall()
     if res:
-        return convertor(res)
+        return convertor_db_to_list(res)
     raise HTTPException(status_code=404, detail="No classmates with such age")
 
 
 @app.post("/add_classmate", status_code=201)
-async def add_classmate(classmate: Classmate) -> str:
+async def add_classmate(classmate: Classmate) -> list[dict]:
     """
     Add classmate to database
     Send JSON with data (name and age are required fields)
@@ -100,7 +101,7 @@ async def add_classmate(classmate: Classmate) -> str:
         con.commit()
     except:
         raise HTTPException(status_code=501, detail="Database issues")
-    return jsonable_encoder(classmate)
+    return convertor_json_to_list(jsonable_encoder(classmate))
 
 
 @app.put("/update", status_code=201)
@@ -124,7 +125,7 @@ async def update_classmate(classmate: Classmate_Update,
             major = classmate.major if classmate.major is not None else mate[4]
             cur.execute(change_existing_user, (name, last_name, age, major, classmate_id))
             con.commit()
-            return convertor([mate])
+            return convertor_db_to_list([mate])
     raise HTTPException(status_code=404, detail="No such classmate in list")
 
 
@@ -142,7 +143,9 @@ async def delete_classmate(classmate_id: int = Query(default=..., description="C
         print(deleted_classmate)
         cur.execute(delete_user, (classmate_id,))
         con.commit()
-    except Exception as _ex:
-        print(_ex)
+    except Exception as _EX:
+        print(_EX)
         raise HTTPException(status_code=404, detail=f"No user with ID {classmate_id}")
-    return convertor(deleted_classmate)
+    return convertor_db_to_list(deleted_classmate)
+
+
