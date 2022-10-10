@@ -1,10 +1,12 @@
-from typing import Optional
 from fastapi import FastAPI, Query, HTTPException, Body
-from pydantic import BaseModel, Field
+from fastapi.encoders import jsonable_encoder
+
 import sqlite3
+
 from imports.config import *
 from imports.funcs import *
-from fastapi.encoders import jsonable_encoder
+from imports.models import *
+
 
 app = FastAPI()
 
@@ -17,45 +19,6 @@ try:
 except Exception as _Ex:
     print("Please try again! Something wrong with database.")
     print(_Ex)
-
-
-class Classmate(BaseModel):
-    """
-    Inherits from BaseModel class from Pydantic
-    Used to add/create new user in POST request
-    """
-    name: str = Field(max_length=15, title="Name of the classmate")
-    last_name: Optional[str] = Field(default=None, max_length=15, title="Last name of the classmate")
-    age: int = Field(gt=0, lt=90, title="Age of the classmate")
-    major: Optional[str] = Field(default=None, max_length=40, description="Major of study of current classmate")
-
-    class Config:
-        """
-        Class to show FastAPI the examples of valid and invalid input data
-        """
-        schema_extra = {
-            "examples": examples_of_extra_schema
-        }
-
-
-class Classmate_Update(BaseModel):
-    """
-    Inherits from BaseModel class from Pydantic
-    Used as type of value to change existing user in UPDATE request, that is why all the fields are optional
-    """
-    name: Optional[str] = Field(max_length=15, title="Name of the classmate")
-    last_name: Optional[str] = Field(max_length=15, title="Last name of the classmate")
-    age: Optional[int] = Field(gt=0, lt=90, title="Age of the classmate")
-    major: Optional[str] = Field(default=None, max_length=40, description="Major of study of current classmate")
-
-    class Config:
-        schema_extra = {
-            "example":
-                {
-                    "last_name": "Lisnytskyi",
-                    "major": "Computer Science"
-                }
-        }
 
 
 @app.get("/", status_code=200)
@@ -114,7 +77,11 @@ async def add_classmate(classmate: Classmate = Body(default=..., description="Da
                     (classmate.name,
                      classmate.last_name,
                      classmate.age,
-                     classmate.major))
+                     classmate.major,
+                     classmate.location.country,
+                     classmate.location.city,
+                     classmate.location.street,
+                     classmate.location.apartment))
         con.commit()
     except:
         raise HTTPException(status_code=501, detail="Database issues")
@@ -134,17 +101,26 @@ async def update_classmate(classmate: Classmate_Update = Body(default=...,
     :param classmate_id: ID of classmate to change, Query parameter in URL like http//x:8000?classmate_id=...
     :return: updated classmate info, return list of dict [{"id": ,"name": , "last_name": ,"age": , "major": }]
     """
-    classmates = cur.execute(select_all).fetchall()
-    for mate in classmates:
-        if mate[0] == classmate_id:
-            name = classmate.name if classmate.name is not None else mate[1]
-            last_name = classmate.last_name if classmate.last_name is not None else mate[2]
-            age = classmate.age if classmate.age is not None and classmate.age > 0 else mate[3]
-            major = classmate.major if classmate.major is not None else mate[4]
-            cur.execute(change_existing_user, (name, last_name, age, major, classmate_id))
-            con.commit()
-            return convertor_db_to_list([mate])
-    raise HTTPException(status_code=404, detail="No such classmate in list")
+
+    try:
+        mate = list(cur.execute(select_by_id, (classmate_id,)).fetchall()[0])
+
+        mate[1] = classmate.name if classmate.name is not None else mate[1]
+        mate[2] = classmate.last_name if classmate.last_name is not None else mate[2]
+        mate[3] = classmate.age if classmate.age is not None and classmate.age > 0 else mate[3]
+        mate[4] = classmate.major if classmate.major is not None else mate[4]
+
+        if classmate.location:
+            mate[5] = classmate.location.country if classmate.location.country is not None else mate[5]
+            mate[6] = classmate.location.city if classmate.location.city is not None else mate[6]
+            mate[7] = classmate.location.street if classmate.location.street is not None else mate[7]
+            mate[8] = classmate.location.apartment if classmate.location.apartment is not None else mate[8]
+        cur.execute(change_existing_user, (mate[1], mate[2], mate[3], mate[4], mate[5], mate[6], mate[7], mate[8], classmate_id,))
+        con.commit()
+        return convertor_db_to_list([mate])
+    except Exception as _Ex:
+        print(_Ex)
+        raise HTTPException(status_code=404, detail="No such classmate in list")
 
 
 @app.delete("/delete_classmate", status_code=200)
@@ -165,5 +141,3 @@ async def delete_classmate(classmate_id: int = Query(default=..., description="C
         print(_EX)
         raise HTTPException(status_code=404, detail=f"No user with ID {classmate_id}")
     return convertor_db_to_list(deleted_classmate)
-
-

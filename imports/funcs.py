@@ -11,7 +11,14 @@ def convertor_db_to_list(classmate) -> list[dict]:
                                 'name': i[1],
                                 'last_name': i[2],
                                 'age': i[3],
-                                'major': i[4]})
+                                'major': i[4],
+                                'location': {
+                                    'country': i[5],
+                                    'city': i[6],
+                                    'street': i[7],
+                                    'apartment': i[8],
+                                },
+                                })
     return classmates_dict
 
 
@@ -25,4 +32,11 @@ def convertor_json_to_list(classmate) -> list[dict]:
     return [{'name': classmate["name"],
              'last_name': classmate["last_name"],
              'age': classmate["age"],
-             'major': classmate["major"]}]
+             'major': classmate["major"],
+             'location': {
+                 'country': classmate["location"]["country"],
+                 'city': classmate["location"]["city"],
+                 'street': classmate["location"]["street"],
+                 'apartment': classmate["location"]["apartment"],
+             },
+             }]
