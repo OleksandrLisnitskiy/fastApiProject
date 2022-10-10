@@ -1,13 +1,12 @@
-from typing import Optional, List
-from fastapi import FastAPI, Query, HTTPException
-from pydantic import BaseModel
+from typing import Optional
+from fastapi import FastAPI, Query, HTTPException, Body
+from pydantic import BaseModel, Field
 import sqlite3
 from imports.config import *
 from imports.funcs import *
 from fastapi.encoders import jsonable_encoder
 
 app = FastAPI()
-
 
 # CONNECT SQLITE3 DATABASE
 try:
@@ -25,21 +24,38 @@ class Classmate(BaseModel):
     Inherits from BaseModel class from Pydantic
     Used to add/create new user in POST request
     """
-    name: str
-    last_name: Optional[str] = None
-    age: int
-    major: Optional[str] = None
+    name: str = Field(max_length=15, title="Name of the classmate")
+    last_name: Optional[str] = Field(default=None, max_length=15, title="Last name of the classmate")
+    age: int = Field(gt=0, lt=90, title="Age of the classmate")
+    major: Optional[str] = Field(default=None, max_length=40, description="Major of study of current classmate")
+
+    class Config:
+        """
+        Class to show FastAPI the examples of valid and invalid input data
+        """
+        schema_extra = {
+            "examples": examples_of_extra_schema
+        }
 
 
 class Classmate_Update(BaseModel):
     """
     Inherits from BaseModel class from Pydantic
-    Used as type of value to change existing user in UPDATE request
+    Used as type of value to change existing user in UPDATE request, that is why all the fields are optional
     """
-    name: Optional[str]
-    last_name: Optional[str]
-    age: Optional[int]
-    major: Optional[str] = None
+    name: Optional[str] = Field(max_length=15, title="Name of the classmate")
+    last_name: Optional[str] = Field(max_length=15, title="Last name of the classmate")
+    age: Optional[int] = Field(gt=0, lt=90, title="Age of the classmate")
+    major: Optional[str] = Field(default=None, max_length=40, description="Major of study of current classmate")
+
+    class Config:
+        schema_extra = {
+            "example":
+                {
+                    "last_name": "Lisnytskyi",
+                    "major": "Computer Science"
+                }
+        }
 
 
 @app.get("/", status_code=200)
@@ -84,7 +100,8 @@ async def get_by_age(age: int = Query(default=...,
 
 
 @app.post("/add_classmate", status_code=201)
-async def add_classmate(classmate: Classmate) -> list[dict]:
+async def add_classmate(classmate: Classmate = Body(default=..., description="Data about classmate to add",
+                                                    examples=examples_of_extra_schema)) -> list[dict]:
     """
     Add classmate to database
     Send JSON with data (name and age are required fields)
@@ -105,9 +122,10 @@ async def add_classmate(classmate: Classmate) -> list[dict]:
 
 
 @app.put("/update", status_code=201)
-async def update_classmate(classmate: Classmate_Update,
-                           classmate_id: int = Query(default=..., description="ID of classmate you want to change")) \
-        -> list[dict]:
+async def update_classmate(classmate: Classmate_Update = Body(default=...,
+                                                              description="Data about classmate to change"),
+                           classmate_id: int = Query(default=..., description="ID of classmate you want to change")
+                           ) -> list[dict]:
     """
     Function to update existing classmate info
     Send JSON with data that should be updated (no required fields)
