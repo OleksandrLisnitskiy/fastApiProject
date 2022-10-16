@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException, Body
+from fastapi import FastAPI, Query, HTTPException, Body, Header
 from fastapi.encoders import jsonable_encoder
 
 import sqlite3
@@ -21,19 +21,20 @@ except Exception as _Ex:
     print(_Ex)
 
 
-@app.get("/", status_code=200)
-async def root():
+@app.get("/", status_code=200, response_model=list[ClassmateOut])
+async def root() -> list[dict]:
     """
     Function that is called after sending the request to root path 127.0.0.1:8000/
 
     :return: return information about all existing classmates
     """
-    return convertor_db_to_list(cur.execute(select_all).fetchall())
+    response = convertor_db_to_list(cur.execute(select_all).fetchall())
+    return response
 
 
-@app.get('/get_by_name', status_code=200)
+@app.get('/get_by_name', status_code=200, response_model=list[ClassmateOut])
 async def get_by_name(name: str = Query(default=...,
-                                        description='Name of classmate to search')) -> list:
+                                        description='Name of classmate to search')) -> list[dict]:
     """
     called after sending the request 127.0.0.1:8000/get_by_name
 
@@ -46,25 +47,25 @@ async def get_by_name(name: str = Query(default=...,
     raise HTTPException(status_code=404, detail="No classmates with such name")
 
 
-@app.get("/get_by_age", status_code=200)
+@app.get("/get_by_age", status_code=200, response_model=list[ClassmateOut])
 async def get_by_age(age: int = Query(default=...,
                                       description='age of classmates you want to search')
-                     ) -> list:
+                     ) -> list[dict]:
     """
     called after sending the request 127.0.0.1:8000/get_by_age
 
     :param age: age of the classmates to find (required)
     :return: list[list,...] list of lists with
     """
-    res = cur.execute(select_by_age, (age,)).fetchall()
-    if res:
-        return convertor_db_to_list(res)
+    classmates = cur.execute(select_by_age, (age,)).fetchall()
+    if classmates:
+        return convertor_db_to_list(classmates)
     raise HTTPException(status_code=404, detail="No classmates with such age")
 
 
-@app.post("/add_classmate", status_code=201)
-async def add_classmate(classmate: Classmate = Body(default=..., description="Data about classmate to add",
-                                                    examples=examples_of_extra_schema)) -> list[dict]:
+@app.post("/add_classmate", status_code=201, response_model=ClassmateOut)
+async def add_classmate(classmate: ClassmateIn = Body(default=..., description="Data about classmate to add",
+                                                      examples=examples_of_extra_schema)) -> dict:
     """
     Add classmate to database
     Send JSON with data (name and age are required fields)
@@ -83,16 +84,19 @@ async def add_classmate(classmate: Classmate = Body(default=..., description="Da
                      classmate.location.street,
                      classmate.location.apartment))
         con.commit()
-    except:
+    except Exception as _Ex:
+        print(_Ex)
         raise HTTPException(status_code=501, detail="Database issues")
-    return convertor_json_to_list(jsonable_encoder(classmate))
+    classmate = convertor_json_to_list(jsonable_encoder(classmate))
+    classmate["classmate_id"] = cur.lastrowid
+    return classmate
 
 
-@app.put("/update", status_code=201)
+@app.put("/update", status_code=201, response_model=ClassmateOut)
 async def update_classmate(classmate: Classmate_Update = Body(default=...,
                                                               description="Data about classmate to change"),
                            classmate_id: int = Query(default=..., description="ID of classmate you want to change")
-                           ) -> list[dict]:
+                           ) -> dict:
     """
     Function to update existing classmate info
     Send JSON with data that should be updated (no required fields)
@@ -123,8 +127,9 @@ async def update_classmate(classmate: Classmate_Update = Body(default=...,
         raise HTTPException(status_code=404, detail="No such classmate in list")
 
 
-@app.delete("/delete_classmate", status_code=200)
-async def delete_classmate(classmate_id: int = Query(default=..., description="Classmate ID to delete")) -> list[dict]:
+@app.delete("/delete_classmate", status_code=200, response_model=ClassmateOut)
+async def delete_classmate(classmate_id: int = Query(default=..., description="Classmate ID to delete")
+                           ) -> dict:
     """
     Function to delete classmate from database by his ID
 
@@ -134,10 +139,14 @@ async def delete_classmate(classmate_id: int = Query(default=..., description="C
     try:
         deleted_classmate = cur.execute(deleted_user_data, (classmate_id,)).fetchall()
 
-        print(deleted_classmate)
         cur.execute(delete_user, (classmate_id,))
         con.commit()
     except Exception as _EX:
-        print(_EX)
         raise HTTPException(status_code=404, detail=f"No user with ID {classmate_id}")
     return convertor_db_to_list(deleted_classmate)
+
+
+@app.get('/test_header', status_code=200)
+async def test_header(user_agent: str | None = Header(default=None), host: str | None = Header(default=None)):
+    return {'User-agent': user_agent,
+            'Host': host}

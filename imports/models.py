@@ -1,5 +1,4 @@
 from pydantic import BaseModel, Field
-from typing import Optional
 from .config import examples_of_extra_schema
 
 
@@ -8,22 +7,22 @@ class Location(BaseModel):
     data structure to save information about classmate location
     """
 
-    country: Optional[str] = Field(default=None, max_length=15, description="Country where classmate live")
-    city: Optional[str] = Field(default=None, max_length=25, description="City where classmate is currently living")
-    street: Optional[str] = Field(default=None, max_length=25, description="Street where classmate is currently living")
-    apartment: Optional[str] = Field(default=None, max_length=5, description="Number of apartment of classmate")
+    country: str | None = Field(default=None, max_length=15, description="Country where classmate live")
+    city: str | None = Field(default=None, max_length=25, description="City where classmate is currently living")
+    street: str | None = Field(default=None, max_length=25, description="Street where classmate is currently living")
+    apartment: str | None = Field(default=None, max_length=5, description="Number of apartment of classmate")
 
 
-class Classmate(BaseModel):
+class ClassmateIn(BaseModel):
     """
     Inherits from BaseModel class from Pydantic
     Used to add/create new user in POST request
     """
     name: str = Field(max_length=15, title="Name of the classmate")
-    last_name: Optional[str] = Field(default=None, max_length=15, title="Last name of the classmate")
+    last_name: str | None = Field(default=None, max_length=15, title="Last name of the classmate")
     age: int = Field(gt=0, lt=90, title="Age of the classmate")
-    major: Optional[str] = Field(default=None, max_length=40, description="Major of study of current classmate")
-    location: Optional[Location] = Field(default=..., description="current location of classmate")
+    major: str | None = Field(default=None, max_length=40, description="Major of study of current classmate")
+    location: Location = Field(default=..., description="current location of classmate")
 
     class Config:
         """
@@ -34,16 +33,29 @@ class Classmate(BaseModel):
         }
 
 
+class ClassmateOut(BaseModel):
+    """
+    Inherits from BaseModel class from Pydantic
+    Used to add/create new user in POST request
+    """
+    classmate_id: int = Field(default=..., title="ID of classmate in database")
+    name: str = Field(max_length=15, title="Name of the classmate")
+    last_name: str | None = Field(default=None, max_length=15, title="Last name of the classmate")
+    age: int = Field(gt=0, lt=90, title="Age of the classmate")
+    major: str | None = Field(default=None, max_length=40, description="Major of study of current classmate")
+    location: Location = Field(default=..., description="current location of classmate")
+
+
 class Classmate_Update(BaseModel):
     """
     Inherits from BaseModel class from Pydantic
     Used as type of value to change existing user in UPDATE request, that is why all the fields are optional
     """
-    name: Optional[str] = Field(max_length=15, title="Name of the classmate")
-    last_name: Optional[str] = Field(max_length=15, title="Last name of the classmate")
-    age: Optional[int] = Field(gt=0, lt=90, title="Age of the classmate")
-    major: Optional[str] = Field(default=None, max_length=40, description="Major of study of current classmate")
-    location: Optional[Location] = Field(default=None, description="current location of classmate")
+    name: str | None = Field(max_length=15, title="Name of the classmate")
+    last_name: str | None = Field(max_length=15, title="Last name of the classmate")
+    age: int | None = Field(gt=0, lt=90, title="Age of the classmate")
+    major: str | None = Field(default=None, max_length=40, description="Major of study of current classmate")
+    location: Location | None = Field(default=None, description="current location of classmate")
 
     class Config:
         schema_extra = {
