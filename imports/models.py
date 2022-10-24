@@ -33,28 +33,21 @@ class ClassmateIn(BaseModel):
         }
 
 
-class ClassmateOut(BaseModel):
+class ClassmateOut(ClassmateIn):
     """
     Inherits from BaseModel class from Pydantic
     Used to add/create new user in POST request
     """
     classmate_id: int = Field(default=..., title="ID of classmate in database")
-    name: str = Field(max_length=15, title="Name of the classmate")
-    last_name: str | None = Field(default=None, max_length=15, title="Last name of the classmate")
-    age: int = Field(gt=0, lt=90, title="Age of the classmate")
-    major: str | None = Field(default=None, max_length=40, description="Major of study of current classmate")
-    location: Location = Field(default=..., description="current location of classmate")
 
 
-class Classmate_Update(BaseModel):
+class ClassmateUpdate(ClassmateIn):
     """
     Inherits from BaseModel class from Pydantic
     Used as type of value to change existing user in UPDATE request, that is why all the fields are optional
     """
     name: str | None = Field(max_length=15, title="Name of the classmate")
-    last_name: str | None = Field(max_length=15, title="Last name of the classmate")
     age: int | None = Field(gt=0, lt=90, title="Age of the classmate")
-    major: str | None = Field(default=None, max_length=40, description="Major of study of current classmate")
     location: Location | None = Field(default=None, description="current location of classmate")
 
     class Config:

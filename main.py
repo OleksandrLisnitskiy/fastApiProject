@@ -87,14 +87,14 @@ async def add_classmate(classmate: ClassmateIn = Body(default=..., description="
     except Exception as _Ex:
         print(_Ex)
         raise HTTPException(status_code=501, detail="Database issues")
-    classmate = convertor_json_to_list(jsonable_encoder(classmate))
+    classmate = classmate.dict()
     classmate["classmate_id"] = cur.lastrowid
     return classmate
 
 
 @app.put("/update", status_code=201, response_model=ClassmateOut)
-async def update_classmate(classmate: Classmate_Update = Body(default=...,
-                                                              description="Data about classmate to change"),
+async def update_classmate(classmate: ClassmateUpdate = Body(default=...,
+                                                             description="Data about classmate to change"),
                            classmate_id: int = Query(default=..., description="ID of classmate you want to change")
                            ) -> dict:
     """
