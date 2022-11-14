@@ -11,6 +11,8 @@ Fast and easy API to gather information about classmates based on Python.
 # Services
  * SQLite3
  * FastAPI
+ * OpenAPI
+ * Starlet
 
 # Creator
 <h3>Oleksadr Lisnytskyi</h3>
